@@ -1,4 +1,4 @@
-setwd("/home/pratima/Insync/pgautam1@umbc.edu/Google Drive/Cusick Lab/Metagenomic_analysis/Megan7_analysis/statistics/permutation_22group_seed/")
+setwd("../statistics/permutation/")
 
 library(ggplot2)
 library(readxl)
@@ -14,23 +14,20 @@ excel_path <-("seed_group.xlsx")
 #list of sheets in observed data file
 sheet_names <- excel_sheets(excel_path)
 
-
-
-results <- data.frame(Category = character(), PValuefrom = character(), Biofilm = numeric(), Water= numeric(), Ratio = numeric(), PValue= numeric(), stringsAsFactors = FALSE)
+results <- data.frame(Category = character(), PValuefrom = character(), Sample1 = numeric(), Sample2= numeric(), Ratio = numeric(), PValue= numeric(), stringsAsFactors = FALSE)
 
 # check the names, etc
 names(alldata)
 #creating dataframe from CSV file for comparision
 compdata <- data.frame(
   Category <- alldata[1]
-  ,Water <- alldata[5]
-  ,Biofilm <- alldata[6]
+  ,Sample2 <- alldata[5]
+  ,Sample1 <- alldata[6]
 )
-#View(compdata)
 
 #read individual sheet from observed data file
 for (sheet in sheet_names) {
-  sheet_data <- #read_excel(excel_path, sheet = sheet)
+  sheet_data <-
     read.xlsx(excel_path, sheet = sheet, colNames = TRUE)
   # create Dataframe from sheet in observed data 
   data <- data.frame(
@@ -42,9 +39,6 @@ counts <- nrow(data)-1
 
   # get ratio Need to update
   test.stat <- sheet_data[[6]][nrow(data)] 
-  #print(test.stat)
-  #print(sheet)
-  
   
   # the number of observations to sample
   n <- counts
@@ -55,33 +49,22 @@ counts <- nrow(data)-1
   variableBio=numeric()
   variableWater=numeric()
   workbook <- createWorkbook() #this with code in line number 56,57,79-82, 88-91, 104 and 105 are used for create excel file with water and biofilm random records.
-  permutedresults <- data.frame( Biofilm = numeric(), Water= numeric(), Ratio = numeric(), stringsAsFactors = FALSE)
-  
-  
+  permutedresults <- data.frame( Sample1 = numeric(), Sample2= numeric(), Ratio = numeric(), stringsAsFactors = FALSE)
   
   #Create a function to calculate permuted ratios
   calculate_permuted_ratios <- function(compdata, n_permutations = P, sample_size = n) {
     permuted_ratios <- as.numeric(n_permutations)
     
-    
     for (i in 1:n_permutations) {
-      
       
       # Randomly select a row index
       #set.seed(357)  # For reproducibility
       random_row <- sample(nrow(compdata), sample_size,replace = TRUE)
       
       # Extract var a and var b from the selected row
-      variableBio <- (compdata[random_row, "Biofilm"])
-      variableWater <- (compdata[random_row, "Water"])
+      variableBio <- (compdata[random_row, "Sample1"])
+      variableWater <- (compdata[random_row, "Sample2"])
       
-      #print(sample_size)
-      #print("random")
-      #print(random_row)
-      #print("bio")
-      #print(variableBio)
-      #print("water")
-      #print(variableWater)
       # Calculate sums
       sum_A <- sum(variableBio)
       sum_B <- sum(variableWater)
@@ -93,8 +76,8 @@ counts <- nrow(data)-1
         permuted_ratios[i] <- NA  # Avoid division by zero
       }
       ratiodata <- data.frame(
-        Biofilm = sum_A,
-        Water = sum_B,  # Random data
+        Sample1 = sum_A,
+        Sample2 = sum_B,  # Random data
         Ratio= sum_A/sum_B
       )
       # Sheet name
@@ -105,14 +88,9 @@ counts <- nrow(data)-1
     # Add data to a new sheet
     addWorksheet(workbook, sheetName = sheet_name)
     writeData(workbook, sheet = sheet_name, permutedresults)
-    #View(sum_A)
-    #View(sum_B)
-    #print(variableBio)
-    #print(variableWater)
     
     # Return the resulting ratios, excluding any NA values
     na.omit(permuted_ratios)
-   # write.csv(permuted_ratios, "permutedratio.csv" )
  
   }
   
@@ -121,10 +99,9 @@ counts <- nrow(data)-1
   
   permuted_ratios <- calculate_permuted_ratios(compdata, n_permutations = P, sample_size = n)
   
-  outputfile <- file.path(folder= "/home/pratima/Insync/pgautam1@umbc.edu/Google Drive/Cusick Lab/Metagenomic_analysis/Megan7_analysis/statistics/permutation_22group_seed/results/", file=paste0(sheet,".xlsx"))
+  outputfile <- file.path(folder= "../results/", file=paste0(sheet,".xlsx"))
   saveWorkbook(workbook, outputfile, overwrite = TRUE)
   write.csv(permuted_ratios, "permuted_ratios.csv" )
-  #View(permuted_ratios)
 
   # initialize a matrix to store the permutation data
   PermSamples <- matrix(0, nrow=n, ncol=P)
@@ -148,37 +125,19 @@ counts <- nrow(data)-1
     # calculate the perm-test-stat1 and save it
     Perm.test.stat[i] <- abs(permuted_ratios[i])
   }
-  #View(Perm.test.stat)
-  #open(permutedratio.csv, "w")
   
-  write.csv(Perm.test.stat, "permutedratio.csv" )
-  # before going too far with this, let's remind ourselves of 
-
+  write.csv(Perm.test.stat, "permutedratio.csv" ) 
   
-  
-  # and, take a look at the first 15 permutation-TEST STATS for 1 and 2
-  #round(Perm.test.stat[1:15], 1)
-  #round(Perm.test.stat2[1:15], 1)
-  
-  # and, let's calculate the permutation p-value...
-  # notice how we can ask R a true/false question...(for the first 15)
-  (Perm.test.stat >= test.stat)[1:15]
-  # and if we ask for the mean of all of those, it treats 0=FALSE, 1=TRUE
-  #mean((Perm.test.stat >= test.stat)[1:15])
+  # let's calculate the permutation p-value.
   
   #...calculate the p-value, for all P=100,000
   Pvalue<-mean(Perm.test.stat >= test.stat)
   print(Pvalue)
   
-  
-  
   # Write information to the output file
   pvalue_data <- data.frame(
-    #Category= sheet_data[1],
     SeedCategory = sheet,
     Seed = sheet_data[[1]][nrow(data)] ,
-    #Biofilm= Biofilm,
-    #Water= Water,
     Ratio = test.stat,
     PValue=  Pvalue
   
@@ -186,16 +145,14 @@ counts <- nrow(data)-1
   results <- rbind(results,pvalue_data)
   #define data
   data <- data.frame(x=Perm.test.stat)#(x=rnorm(1000))
-  
-  
-  #View(data)
+
   #create histogram and overlay normal curve
   his<- ggplot(data, aes(x)) +
     geom_histogram(aes(y =..density..), fill='lightgray', col='black') +
     stat_function(fun = dnorm, args = list(mean=mean(data$x), sd=sd(data$x)))
   
   # Define the folder path and filename
-  folder <- "/home/pratima/Insync/pgautam1@umbc.edu/Google Drive/Cusick Lab/Metagenomic_analysis/Megan7_analysis/statistics/permutation_22group_seed/figures/"
+  folder <- "../figures/"
   filename <- paste0(sheet,".pdf")
   
   # Combine the folder and filename
@@ -204,11 +161,6 @@ counts <- nrow(data)-1
   # Save the plot
   ggsave(filename = output_path, plot = his, width = 8, height = 6) #saves  figure
 }
-
-#define data
-#data <- data.frame(x=Perm.test.stat)#(x=rnorm(1000))
-#View(data)
-#create histogram and overlay normal curve
 
 # Directory to save the output file
 output_file <- "seedgroup_result_adjusted.xlsx"

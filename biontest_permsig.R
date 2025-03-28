@@ -1,16 +1,14 @@
-setwd("/home/pratima/Insync/pgautam1@umbc.edu/Google Drive/Cusick Lab/Metagenomic_analysis/Megan7_analysis/statistics/binomial_seedgroup/")
+setwd("../binomial/")
 
 library(ggplot2)
 library(readxl)
 library(openxlsx)
 library(writexl)
 
-excel_path <-("permsig.xlsx")
+excel_path <-("files2.xlsx")
 sheet_names <- excel_sheets(excel_path)
 
-
-
-results <- data.frame(Category = character(),Biofilm = numeric(), Water= numeric(), PValue= numeric(), stringsAsFactors = FALSE)
+results <- data.frame(Category = character(),Sample1 = numeric(), Sample2= numeric(), PValue= numeric(), stringsAsFactors = FALSE)
 
 
 # Directory to save the output file
@@ -28,13 +26,13 @@ for (sheet in sheet_names) {
   for (i in 1:rows) {
     # Extract the current row as a data frame or vector
     Category <- data[i,1]
-    Biofilm <- data[i,4]
-    Water <- data[i,5]
+    Sample1 <- data[i,4]
+    Sample2 <- data[i,5]
    
-    total <- Biofilm + Water
+    total <- Sample1 + Sample2
     # Perform binomial test if total > 0
     if (total > 0) {
-      p_values[i] <- binom.test(as.integer(Biofilm), as.integer(total), p = 0.5, alternative = "greater")$p.value
+      p_values[i] <- binom.test(as.integer(Sample1), as.integer(total), p = 0.5, alternative = "greater")$p.value
       adjusted_p_values <- p.adjust(p_values, method = "BH")
     } else {
       p_values[i] <- NA  # Assign NA if total is zero (no observations)
